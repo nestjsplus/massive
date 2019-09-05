@@ -15,7 +15,8 @@ import {
 })
 export class MassiveModule {
   /**
-   * Registers a configured @nestjsplus/massive Module for import into the current module.
+   * Registers a configured @nestjsplus/massive Module for import into the current module
+   * using static connectOptions and configOptions (optional) objects
    */
   public static register(
     connectOptions: MassiveConnectOptions,
@@ -36,7 +37,11 @@ export class MassiveModule {
     };
   }
 
-  static registerAsync(
+  /**
+   * Registers a configured @nestjsplus/massive Module for import into the current module
+   * using dynamic options (factory, etc)
+   */
+  public static registerAsync(
     connectOptions: MassiveConnectAsyncOptions,
     configOptions?: MassiveConfigAsyncOptions,
   ): DynamicModule {

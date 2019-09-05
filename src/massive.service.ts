@@ -17,8 +17,6 @@ export class MassiveService implements IMassiveService {
   ) {}
 
   async connect(): Promise<any> {
-    console.log('connect options: ', this._massiveConnectOptions);
-    console.log('config options: ', this._massiveConfigOptions);
     return this._massiveClient
       ? this._massiveClient
       : (this._massiveClient = await massive(
