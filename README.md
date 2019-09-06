@@ -45,7 +45,7 @@ To configure the `Massive` module use the familiar `register()` / `registerAsync
 
 The only slightly tricky part is that you need to set up a _provider_ that provides the singleton connection to your other (feature) modules. This isn't hard, but can be slightly confusing. I recommend reading [Custom providers](https://docs.nestjs.com/fundamentals/custom-providers) in the Nest docs if this isn't familiar. It's important to set this connection up as an [asynchronous provider](https://docs.nestjs.com/fundamentals/async-providers) as shown in the sample code below; this ensures that your DB connection is available before your feature modules, which depend on it, are instantiated.
 
-So, for example, your `DataaseModule` might look like this (full example in the [sample repo](https://github.com/nestjsplus/massive-cats)):
+So, for example, your `DatabaseModule` might look like this (full example in the [sample repo](https://github.com/nestjsplus/massive-cats)):
 
 ```typescript
 // src/database/database.module.ts
@@ -123,7 +123,7 @@ export class AppService {
 
 Here are a few notes from the code sample above:
 
-1. You probably noticed two `{ useExisting: ConfigService }` objects being passed to `registerAsync()`. This is because we are passing in both a `connectionOptions` object and a `configurationOptions` object (see Massive docs for more on these). `connectionOptions` is required, but `configurationOptions` is optional.
+1. You probably noticed two `{ useExisting: ConfigService }` objects being passed to `registerAsync()`. This is because we are passing in both a `connectionOptions` object and a `configurationOptions` object (see [Massive docs](https://massivejs.org/docs/connecting#driver-configuration) for more on these). `connectionOptions` is required, but `configurationOptions` is optional.
 2. I'm not showing the `ConfigService` here, but it's just an _injectable_ that implements the `MassiveOptionsFactory` interface, meaning it has methods to return a `connectionOptions` object, and `configurationOptions` object. A `connectionOptions` object looks like:
 
 ```json
@@ -140,8 +140,8 @@ You can use any of the following methods to provide the `connectionOptions` and 
 
 - `register()`: pass a plain JavaScript object
 - `registerAsync()`: pass a dynamic object via:
-  - `useFactory`: supply a factory function to return the object
-  - `useExisting`: bind to an existing (provided elsewhere) service to supply the object
+  - `useFactory`: supply a factory function to return the object; the factory should implement the [MassiveOptionsFactory](https://github.com/nestjsplus/massive/blob/master/src/interfaces/massive-options-factory.interface.ts) interface
+  - `useExisting`: bind to an existing (provided elsewhere) service to supply the object; that service should implement the [MassiveOptionsFactory](https://github.com/nestjsplus/massive/blob/master/src/interfaces/massive-options-factory.interface.ts) interface
 
 3. The `DB_CONNECTION` is an [asynchronous provider](https://docs.nestjs.com/fundamentals/async-providers). This means that the application bootstrap process (really, the Dependency Injection phase) won't complete until the DB connection is fulfilled. So your app, once it bootstraps, is guaranteed to have a DB connection (pool). Note that asynchronous providers must be injected with the `@Inject()` decorator instead of normal constructor injection in your feature module (again, see the [example](https://github.com/nestjsplus/massive-cat)).
 
@@ -156,10 +156,10 @@ Boring end-notes here! My long love affair with SQL databases began when I start
 - It's free! :smiley:
 - It's fast and scalable
 - It's supported on Amazon RDS
-- It's got every modern SQL feature, and many, many more (check out [Postgis](https://postgis.net/) if you are into mapping, for example)
+- It's got every modern SQL feature, and many, many more (check out [Postgis](https://postgis.net/) if you are into mapping/GIS, for example)
 - It supports JSONB and is a very good NoSQL database
-- It has a super passionate community, and support on StackOverflow is widespread
-- I could go on, but I won't :)
+- It has a super passionate community, and support on StackOverflow is superb
+- I could go on, but I won't :smile:
 
 ### To Do
 
