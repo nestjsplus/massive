@@ -1,6 +1,7 @@
 import {
   MassiveConnectOptions,
   MassiveConfigOptions,
+  MassiveDriverOptions,
 } from './massive-module-options.interface';
 
 export interface MassiveOptionsFactory {
@@ -11,4 +12,8 @@ export interface MassiveOptionsFactory {
   createMassiveConfigOptions?: () =>
     | Promise<MassiveConfigOptions>
     | MassiveConfigOptions;
+
+  createMassiveDriverOptions?: () =>
+    | Promise<MassiveDriverOptions>
+    | MassiveDriverOptions;
 }

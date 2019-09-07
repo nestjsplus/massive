@@ -5,6 +5,7 @@ import { ModuleMetadata, Type } from '@nestjs/common/interfaces';
 import {
   MassiveConnectOptions,
   MassiveConfigOptions,
+  MassiveDriverOptions,
 } from './massive-module-options.interface';
 import { MassiveOptionsFactory } from './massive-options-factory.interface';
 
@@ -24,4 +25,13 @@ export interface MassiveConfigAsyncOptions
   useFactory?: (
     ...args: any[]
   ) => Promise<MassiveConfigOptions> | MassiveConfigOptions;
+}
+
+export interface MassiveDriverAsyncOptions
+  extends Pick<ModuleMetadata, 'imports'> {
+  inject?: any[];
+  useExisting?: Type<MassiveOptionsFactory>;
+  useFactory?: (
+    ...args: any[]
+  ) => Promise<MassiveDriverOptions> | MassiveDriverOptions;
 }

@@ -3,6 +3,7 @@ import { MassiveService } from './massive.service';
 import {
   MASSIVE_CONNECT_OPTIONS,
   MASSIVE_CONFIG_OPTIONS,
+  MASSIVE_DRIVER_OPTIONS,
   MASSIVE_CONNECTION,
 } from './constants';
 import {
@@ -11,6 +12,8 @@ import {
   MassiveOptionsFactory,
   MassiveConfigOptions,
   MassiveConfigAsyncOptions,
+  MassiveDriverOptions,
+  MassiveDriverAsyncOptions,
 } from './interfaces';
 
 export const connectionFactory = {
@@ -34,6 +37,7 @@ export class MassiveModule {
   public static register(
     connectOptions: MassiveConnectOptions,
     configOptions?: MassiveConfigOptions,
+    driverOptions?: MassiveDriverOptions,
   ): DynamicModule {
     return {
       module: MassiveModule,
@@ -45,6 +49,10 @@ export class MassiveModule {
         {
           provide: MASSIVE_CONFIG_OPTIONS,
           useValue: configOptions || {},
+        },
+        {
+          provide: MASSIVE_DRIVER_OPTIONS,
+          useValue: driverOptions || {},
         },
         connectionFactory,
       ],
@@ -58,6 +66,7 @@ export class MassiveModule {
   public static registerAsync(
     connectOptions: MassiveConnectAsyncOptions,
     configOptions?: MassiveConfigAsyncOptions,
+    driverOptions?: MassiveDriverAsyncOptions,
   ): DynamicModule {
     return {
       module: MassiveModule,
@@ -65,6 +74,7 @@ export class MassiveModule {
       providers: [
         this.createConnectAsyncProviders(connectOptions),
         this.createConfigAsyncProviders(configOptions),
+        this.createDriverAsyncProviders(driverOptions),
         connectionFactory,
       ],
     };
@@ -112,6 +122,33 @@ export class MassiveModule {
     } else {
       return {
         provide: MASSIVE_CONFIG_OPTIONS,
+        useValue: {},
+      };
+    }
+  }
+
+  private static createDriverAsyncProviders(
+    options: MassiveDriverAsyncOptions,
+  ): Provider {
+    if (options) {
+      if (options.useFactory) {
+        return {
+          provide: MASSIVE_DRIVER_OPTIONS,
+          useFactory: options.useFactory,
+          inject: options.inject || [],
+        };
+      } else {
+        return {
+          provide: MASSIVE_DRIVER_OPTIONS,
+          useFactory: async (optionsFactory: MassiveOptionsFactory) => {
+            return optionsFactory.createMassiveDriverOptions();
+          },
+          inject: [options.useExisting],
+        };
+      }
+    } else {
+      return {
+        provide: MASSIVE_DRIVER_OPTIONS,
         useValue: {},
       };
     }

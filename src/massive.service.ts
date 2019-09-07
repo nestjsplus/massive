@@ -1,7 +1,11 @@
 // tslint:disable: variable-name
 import { Injectable, Inject } from '@nestjs/common';
 import massive = require('massive');
-import { MASSIVE_CONNECT_OPTIONS, MASSIVE_CONFIG_OPTIONS } from './constants';
+import {
+  MASSIVE_CONNECT_OPTIONS,
+  MASSIVE_CONFIG_OPTIONS,
+  MASSIVE_DRIVER_OPTIONS,
+} from './constants';
 
 interface IMassiveService {
   connect(): Promise<any>;
@@ -14,6 +18,7 @@ export class MassiveService implements IMassiveService {
   constructor(
     @Inject(MASSIVE_CONNECT_OPTIONS) private _massiveConnectOptions,
     @Inject(MASSIVE_CONFIG_OPTIONS) private _massiveConfigOptions,
+    @Inject(MASSIVE_DRIVER_OPTIONS) private _massiveDriverOptions,
   ) {}
 
   async connect(): Promise<any> {
@@ -22,6 +27,7 @@ export class MassiveService implements IMassiveService {
       : (this._massiveClient = await massive(
           this._massiveConnectOptions,
           this._massiveConfigOptions,
+          this._massiveDriverOptions,
         ));
   }
 }
