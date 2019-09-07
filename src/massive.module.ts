@@ -1,6 +1,10 @@
-import { Module, DynamicModule, Provider } from '@nestjs/common';
+import { Module, DynamicModule, Provider, Global } from '@nestjs/common';
 import { MassiveService } from './massive.service';
-import { MASSIVE_CONNECT_OPTIONS, MASSIVE_CONFIG_OPTIONS } from './constants';
+import {
+  MASSIVE_CONNECT_OPTIONS,
+  MASSIVE_CONFIG_OPTIONS,
+  MASSIVE_CONNECTION,
+} from './constants';
 import {
   MassiveConnectOptions,
   MassiveConnectAsyncOptions,
@@ -9,9 +13,18 @@ import {
   MassiveConfigAsyncOptions,
 } from './interfaces';
 
+export const connectionFactory = {
+  provide: MASSIVE_CONNECTION,
+  useFactory: async massiveService => {
+    return massiveService.connect();
+  },
+  inject: [MassiveService],
+};
+
+@Global()
 @Module({
   providers: [MassiveService],
-  exports: [MassiveService],
+  exports: [MassiveService, connectionFactory],
 })
 export class MassiveModule {
   /**
@@ -33,6 +46,7 @@ export class MassiveModule {
           provide: MASSIVE_CONFIG_OPTIONS,
           useValue: configOptions || {},
         },
+        connectionFactory,
       ],
     };
   }
@@ -51,6 +65,7 @@ export class MassiveModule {
       providers: [
         this.createConnectAsyncProviders(connectOptions),
         this.createConfigAsyncProviders(configOptions),
+        connectionFactory,
       ],
     };
   }

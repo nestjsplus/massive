@@ -1,6 +1,6 @@
 {
   "name": "@nestjsplus/massive",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "NestJS module integrating MassiveJS",
   "author": "John Biundo <johnfbiundo@gmail.com>",
   "license": "MIT",
