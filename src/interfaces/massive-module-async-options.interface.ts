@@ -13,6 +13,7 @@ export interface MassiveConnectAsyncOptions
   extends Pick<ModuleMetadata, 'imports'> {
   inject?: any[];
   useExisting?: Type<MassiveOptionsFactory>;
+  useClass?: Type<MassiveOptionsFactory>;
   useFactory?: (
     ...args: any[]
   ) => Promise<MassiveConnectOptions> | MassiveConnectOptions;
@@ -22,6 +23,7 @@ export interface MassiveConfigAsyncOptions
   extends Pick<ModuleMetadata, 'imports'> {
   inject?: any[];
   useExisting?: Type<MassiveOptionsFactory>;
+  useClass?: Type<MassiveOptionsFactory>;
   useFactory?: (
     ...args: any[]
   ) => Promise<MassiveConfigOptions> | MassiveConfigOptions;
@@ -31,6 +33,7 @@ export interface MassiveDriverAsyncOptions
   extends Pick<ModuleMetadata, 'imports'> {
   inject?: any[];
   useExisting?: Type<MassiveOptionsFactory>;
+  useClass?: Type<MassiveOptionsFactory>;
   useFactory?: (
     ...args: any[]
   ) => Promise<MassiveDriverOptions> | MassiveDriverOptions;

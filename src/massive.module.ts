@@ -25,10 +25,7 @@ export const connectionFactory = {
 };
 
 @Global()
-@Module({
-  providers: [MassiveService],
-  exports: [MassiveService, connectionFactory],
-})
+@Module({})
 export class MassiveModule {
   /**
    * Registers a configured @nestjsplus/massive Module for import into the current module
@@ -55,7 +52,9 @@ export class MassiveModule {
           useValue: driverOptions || {},
         },
         connectionFactory,
+        MassiveService,
       ],
+      exports: [MassiveService, connectionFactory],
     };
   }
 
@@ -68,6 +67,16 @@ export class MassiveModule {
     configOptions?: MassiveConfigAsyncOptions,
     driverOptions?: MassiveDriverAsyncOptions,
   ): DynamicModule {
+    const allImports = [
+      ...new Set(
+        [].concat(
+          connectOptions.imports,
+          configOptions ? configOptions.imports : [],
+          driverOptions ? driverOptions.imports : [],
+        ),
+      ),
+    ];
+
     return {
       module: MassiveModule,
       imports: connectOptions.imports || [],
@@ -76,7 +85,9 @@ export class MassiveModule {
         this.createConfigAsyncProviders(configOptions),
         this.createDriverAsyncProviders(driverOptions),
         connectionFactory,
+        MassiveService,
       ],
+      exports: [MassiveService, connectionFactory],
     };
   }
 
@@ -91,12 +102,12 @@ export class MassiveModule {
       };
     }
 
+    // For useClass and useExisting...
     return {
       provide: MASSIVE_CONNECT_OPTIONS,
-      useFactory: async (optionsFactory: MassiveOptionsFactory) => {
-        return optionsFactory.createMassiveConnectOptions();
-      },
-      inject: [options.useExisting],
+      useFactory: async (optionsFactory: MassiveOptionsFactory) =>
+        await optionsFactory.createMassiveConnectOptions(),
+      inject: [options.useExisting || options.useClass],
     };
   }
 
@@ -111,12 +122,12 @@ export class MassiveModule {
           inject: options.inject || [],
         };
       } else {
+        // For useClass and useExisting...
         return {
           provide: MASSIVE_CONFIG_OPTIONS,
-          useFactory: async (optionsFactory: MassiveOptionsFactory) => {
-            return optionsFactory.createMassiveConfigOptions();
-          },
-          inject: [options.useExisting],
+          useFactory: async (optionsFactory: MassiveOptionsFactory) =>
+            await optionsFactory.createMassiveConfigOptions(),
+          inject: [options.useExisting || options.useClass],
         };
       }
     } else {
@@ -138,12 +149,12 @@ export class MassiveModule {
           inject: options.inject || [],
         };
       } else {
+        // For useClass and useExisting...
         return {
           provide: MASSIVE_DRIVER_OPTIONS,
-          useFactory: async (optionsFactory: MassiveOptionsFactory) => {
-            return optionsFactory.createMassiveDriverOptions();
-          },
-          inject: [options.useExisting],
+          useFactory: async (optionsFactory: MassiveOptionsFactory) =>
+            await optionsFactory.createMassiveDriverOptions(),
+          inject: [options.useExisting || options.useClass],
         };
       }
     } else {
