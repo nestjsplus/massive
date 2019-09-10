@@ -89,7 +89,7 @@ Here, you've injected the connection as a local property of the service class, a
 
 ### Configuring `connectionOptions`
 
-I'm not showing the `ConfigService` in the `AppModule` above, but it's just an _injectable_ that implements the `MassiveOptionsFactory` interface, meaning it has methods to return a `connectionOptions` object, and `configurationOptions` object. A `connectionOptions` object looks like:
+I'm not showing the `ConfigService` in the `AppModule` above, but it's just an _injectable_ that implements the `MassiveOptionsFactory` interface, meaning it has methods to return a `connectionOptions` object (and optionally, `configurationOptions` and `driverOptions` objects). A `connectionOptions` object looks like:
 
 ```json
 {
