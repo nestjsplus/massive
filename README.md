@@ -39,92 +39,57 @@ On top of all that, it has full `JSONB` support, meaning you get to treat your P
 
 ### Quick Start
 
-The pattern I use is to create a `DatabaseModule` and manage the connection (really, the _connection pool_) through it. In essence, all this module does is let you easily manage a singleton connection. If you've tried to do that with Express, you know that can sometimes feel like jumping through hoops. With Nest modules and DI, this is straightforward.
+To configure your DB connection, import the `Massive` module using the familiar `register()` / `registerAsync()` pattern. See the [example repo](https://github.com/nestjsplus/massive-cats) for an example. Basically, you configure the module with at least a `connectionOptions` object, and optionally a `configurationOptions` object and `driverOptions` object. These options objects map directly to the connection, configuration, and driver options [in the Massive docs](https://massivejs.org/docs/connecting).
 
-To configure the `Massive` module use the familiar `register()` / `registerAsync()` pattern. Do this inside your `DatabaseModule` so it can be shared across your app. See the [example repo](https://github.com/nestjsplus/massive-cats) for an example, but basically you want to configure the module with at least a `connectionOptions` object, and optionally a `configurationOptions` object. These object map directly to the connection and configuration options [in the Massive docs](https://massivejs.org/docs/connecting). Note, the initial release of this module **does not** support the [driver configuration](https://massivejs.org/docs/connecting#driver-configuration) option, but I do intend to support that soon as it has some features I want :smiley:.
+Once configured, inject the `SINGLETON` connection object into any service using the `MASSIVE_CONNECTION` injection token.
 
-The only slightly tricky part is that you need to set up a _provider_ that provides the singleton connection to your other (feature) modules. This isn't hard, but can be slightly confusing. I recommend reading [Custom providers](https://docs.nestjs.com/fundamentals/custom-providers) in the Nest docs if this isn't familiar. It's important to set this connection up as an [asynchronous provider](https://docs.nestjs.com/fundamentals/async-providers) as shown in the sample code below; this ensures that your DB connection is available before your feature modules, which depend on it, are instantiated.
-
-So, for example, your `DatabaseModule` might look like this (full example in the [sample repo](https://github.com/nestjsplus/massive-cats)):
-
-```typescript
-// src/database/database.module.ts
-import { Module } from '@nestjs/common';
-import { DatabaseService } from './database.service';
-import { MassiveModule } from '@nestjsplus/massive';
-import { DB_CONNECTION } from './constants';
-import { ConfigService } from '../config/config.service';
-
-const connectionFactory = {
-  provide: DB_CONNECTION,
-  useFactory: async (databaseService: DatabaseService) => {
-    return databaseService.connect();
-  },
-  inject: [DatabaseService],
-};
-
-@Module({
-  imports: [
-    MassiveModule.registerAsync(
-      {
-        useExisting: ConfigService,
-      },
-      {
-        useExisting: ConfigService,
-      },
-    ),
-  ],
-  providers: [DatabaseService, connectionFactory],
-  exports: [connectionFactory],
-})
-export class DatabaseModule {}
-```
-
-Now you've created a `DB_CONNECTION` token that is associated with the PostgreSQL connection pool, which you can inject into any feature module, and use directly. For example, a feature module might do this to import the `DatabaseModule`:
+For example, your `AppModule` might look like this (full example in the [sample repo](https://github.com/nestjsplus/massive-cats)):
 
 ```typescript
 // src/app.module.ts
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from './config/config.module';
+import { ConfigService } from './config/config.service';
+import { MassiveModule } from '@nestjsplus/massive';
 
 @Module({
-  imports: [DatabaseModule, ConfigModule],
+  imports: [
+    MassiveModule.registerAsync({
+      useClass: ConfigService,
+    }),
+    ConfigModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
 ```
 
-And then a service inside that module would do something like this:
+Now you have access to a `MASSIVE_CONNECTION` token that is associated with the PostgreSQL connection pool, which you can inject into any provider, and use directly. For example, you might do this:
 
 ```typescript
 // src/app.service.ts
 import { Inject, Injectable } from '@nestjs/common';
-import { DB_CONNECTION } from './database/constants';
-import { ConfigService } from './config/config.service';
+import { MASSIVE_CONNECTION } from '@nestjsplus/massive';
 
 @Injectable()
 export class AppService {
-  constructor(
-    @Inject(DB_CONNECTION) private readonly db,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(@Inject(MASSIVE_CONNECTION) private readonly db) {}
 
-  async create(cat) {
-    return await this.db.cats.save(cat);
+  async find(age) {
+    const criteria = age ? { 'age >=': age } : {};
+    return await this.db.cats.find(criteria);
   }
   ...
 ```
 
-### A Few Details
+Here, you've injected the connection as a local property of the service class, and can access any of the MassiveJS API through that property (e.g., `return await this.db.cats.find(criteria)`, where `db` represents your MassiveJS connection object).
 
-Here are a few notes from the code sample above:
+### Configuring `connectionOptions`
 
-1. You probably noticed two `{ useExisting: ConfigService }` objects being passed to `registerAsync()`. This is because we are passing in both a `connectionOptions` object and a `configurationOptions` object (see [Massive docs](https://massivejs.org/docs/connecting#driver-configuration) for more on these). `connectionOptions` is required, but `configurationOptions` is optional.
-2. I'm not showing the `ConfigService` here, but it's just an _injectable_ that implements the `MassiveOptionsFactory` interface, meaning it has methods to return a `connectionOptions` object, and `configurationOptions` object. A `connectionOptions` object looks like:
+I'm not showing the `ConfigService` in the `AppModule` above, but it's just an _injectable_ that implements the `MassiveOptionsFactory` interface, meaning it has methods to return a `connectionOptions` object, and `configurationOptions` object. A `connectionOptions` object looks like:
 
 ```json
 {
@@ -136,18 +101,21 @@ Here are a few notes from the code sample above:
 }
 ```
 
-You can use any of the following methods to provide the `connectionOptions` and `configurationOptions` to the module. These follow the [usual patterns for custom providers](https://docs.nestjs.com/fundamentals/custom-providers):
+You can use any of the following methods to provide the `connectionOptions` (and optionally `configurationOptions` and `driverOptions`) to the module. These follow the [usual patterns for custom providers](https://docs.nestjs.com/fundamentals/custom-providers):
 
 - `register()`: pass a plain JavaScript object
 - `registerAsync()`: pass a dynamic object via:
   - `useFactory`: supply a factory function to return the object; the factory should implement the [MassiveOptionsFactory](https://github.com/nestjsplus/massive/blob/master/src/interfaces/massive-options-factory.interface.ts) interface
-  - `useExisting`: bind to an existing (provided elsewhere) service to supply the object; that service should implement the [MassiveOptionsFactory](https://github.com/nestjsplus/massive/blob/master/src/interfaces/massive-options-factory.interface.ts) interface
+  - `useClass`: bind to a provider/service that supplies the object; that service should implement the [MassiveOptionsFactory](https://github.com/nestjsplus/massive/blob/master/src/interfaces/massive-options-factory.interface.ts) interface
+  - `useExisting`: bind to an existing (provided elsewhere) provider/service to supply the object; that service should implement the [MassiveOptionsFactory](https://github.com/nestjsplus/massive/blob/master/src/interfaces/massive-options-factory.interface.ts) interface
 
-3. The `DB_CONNECTION` is an [asynchronous provider](https://docs.nestjs.com/fundamentals/async-providers). This means that the application bootstrap process (really, the Dependency Injection phase) won't complete until the DB connection is fulfilled. So your app, once it bootstraps, is guaranteed to have a DB connection (pool). Note that asynchronous providers must be injected with the `@Inject()` decorator instead of normal constructor injection in your feature module (again, see the [example](https://github.com/nestjsplus/massive-cat)).
+### Connection availability on application startup
+
+The `MASSIVE_CONNECTION` is an [asynchronous provider](https://docs.nestjs.com/fundamentals/async-providers). This means that the Nest application bootstrap process (specifically, the Dependency Injection phase) won't complete until the DB connection is made. So your app, once it bootstraps, is guaranteed to have a DB connection (pool) via the `MASSIVE_CONNECTION` injection token. Note that asynchronous providers must be injected with the `@Inject()` decorator instead of normal constructor injection (again, see the [example](https://github.com/nestjsplus/massive-cat)).
 
 ### Working Example
 
-See [massive-cats](https://github.com/nestjsplus/massive-cats) for a full example. It shows the `DatabaseModule` pattern, a feature module that uses it, and includes a few of the nifty Massive features described above.
+See [massive-cats](https://github.com/nestjsplus/massive-cats) for a full example. It shows an example of using the `MASSIVE_CONNECTION`, a service that uses it to access a PostgreSQL database, and includes a few of the nifty Massive features described above.
 
 ### Ingres
 
@@ -164,7 +132,7 @@ Boring end-notes here! My long love affair with SQL databases began when I start
 ### To Do
 
 - [ ] Tests
-- [ ] Implement the [driver configuration](https://massivejs.org/docs/connecting#driver-configuration) option
+- [x] Implement the [driver configuration](https://massivejs.org/docs/connecting#driver-configuration) option
 
 ### Change Log
 
